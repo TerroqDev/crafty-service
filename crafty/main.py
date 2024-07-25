@@ -2,8 +2,16 @@ import logging
 from importlib.metadata import metadata
 
 import uvicorn
+from alembic import command
+from alembic.config import Config
 from fastapi import FastAPI
 from fastapi.responses import RedirectResponse
+from sqlalchemy_utils import create_database, database_exists
+
+from config import get_settings
+from crafty.db.database import Base, engine
+
+get_settings.cache_clear()
 
 # Initialize the FastAPI app
 app = FastAPI(
@@ -37,6 +45,15 @@ def main():
     """
 
     logger.info(f"Starting application {app.title}.")
+
+    alembic_cfg = Config("alembic.ini")
+
+    if not database_exists(get_settings().database_url):
+        create_database(get_settings().database_url)
+        Base.metadata.create_all(bind=engine)
+        command.stamp(alembic_cfg, "head")
+    else:
+        command.upgrade(alembic_cfg, "head")
 
     uvicorn.run(
         "crafty.main:app",
