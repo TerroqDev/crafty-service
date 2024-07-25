@@ -1,0 +1,24 @@
+[tool.poetry]
+name = "crafty"
+version = "0.1.0"
+description = ""
+authors = ["Marija Matijevic <marija.matijevi@gmail.com>", "Valentin Vareskic <valentin.vareskic@gmail.com>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.12"
+fastapi = "^0.111.1"
+uvicorn = "^0.30.3"
+
+[tool.poetry.group.dev.dependencies]
+pre-commit = "^3.7.1"
+black = "^24.4.2"
+isort = "^5.13.2"
+mypy = "^1.11.0"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.poetry.scripts]
+crafty = "crafty.main:main"
