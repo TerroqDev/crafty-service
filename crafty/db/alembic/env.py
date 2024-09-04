@@ -6,8 +6,12 @@ from sqlalchemy.ext.declarative import DeclarativeMeta
 
 from config import get_settings
 from crafty.db.database import Base
-from crafty.db.models.item import Item
-from crafty.db.models.user import User
+from crafty.db.models.favorite import Favorite
+from crafty.db.models.product import Product, ProductImage
+from crafty.db.models.review import Review
+from crafty.db.models.subscription import Subscription
+from crafty.db.models.tag import Tag
+from crafty.db.models.user import Buyer, Seller, User
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
