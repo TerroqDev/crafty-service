@@ -50,9 +50,11 @@ def main():
 
     if not database_exists(get_settings().database_url):
         create_database(get_settings().database_url)
+        logger.info("Database created, applying migrations.")
         Base.metadata.create_all(bind=engine)
-        command.stamp(alembic_cfg, "head")
+        command.upgrade(alembic_cfg, "head")
     else:
+        logger.info("Applying any pending migrations.")
         command.upgrade(alembic_cfg, "head")
 
     uvicorn.run(
