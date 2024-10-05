@@ -2,13 +2,15 @@ from typing import Optional
 
 from pydantic import BaseModel
 
+from crafty.constants import Rating
+
 
 class ReviewCreate(BaseModel):
     """
     Schema for creating a new review.
     """
 
-    rating: int
+    rating: Rating
     comment: Optional[str]
     reviewer_id: int
     reviewed_user_id: Optional[int]

@@ -1,7 +1,14 @@
+import logging
+
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from crafty.db.models.subscription import Subscription
+from crafty.exceptions import (SubscriptionAlreadyExistsError,
+                               SubscriptionNotFoundError)
 from crafty.schemas.subscription import SubscriptionCreate
+
+logger = logging.getLogger(__name__)
 
 
 def create_subscription(db: Session, subscription: SubscriptionCreate) -> Subscription:
@@ -14,12 +21,24 @@ def create_subscription(db: Session, subscription: SubscriptionCreate) -> Subscr
 
     Returns:
         Subscription: The created subscription object.
+
+    Raises:
+        SubscriptionAlreadyExistsError: If a subscription with the same name already exists.
+        Exception: For any unexpected errors during the creation process.
     """
-    db_subscription = Subscription(**subscription.dict())
-    db.add(db_subscription)
-    db.commit()
-    db.refresh(db_subscription)
-    return db_subscription
+    try:
+        db_subscription = Subscription(**subscription.dict())
+        db.add(db_subscription)
+        db.commit()
+        db.refresh(db_subscription)
+        return db_subscription
+    except IntegrityError:
+        db.rollback()
+        raise SubscriptionAlreadyExistsError()
+    except Exception as e:
+        logger.error(f"Unexpected error while creating subscription: {e}")
+        db.rollback()
+        raise
 
 
 def get_subscription(db: Session, subscription_id: int) -> Subscription:
@@ -31,9 +50,17 @@ def get_subscription(db: Session, subscription_id: int) -> Subscription:
         subscription_id (int): The ID of the subscription to retrieve.
 
     Returns:
-        Subscription: The retrieved subscription object or None if not found.
+        Subscription: The retrieved subscription object.
+
+    Raises:
+        SubscriptionNotFoundError: If no subscription with the given ID exists.
     """
-    return db.query(Subscription).filter(Subscription.id == subscription_id).first()
+    subscription = (
+        db.query(Subscription).filter(Subscription.id == subscription_id).first()
+    )
+    if not subscription:
+        raise SubscriptionNotFoundError(subscription_id)
+    return subscription
 
 
 def get_subscriptions(

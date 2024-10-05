@@ -6,7 +6,7 @@ from sqlalchemy.exc import IntegrityError, NoResultFound
 from sqlalchemy.orm import Session
 
 from crafty.db.models.product import Product, ProductImage
-from crafty.exceptions import (ProductAlreadyExistsError,
+from crafty.exceptions import (NoProductsFoundError, ProductAlreadyExistsError,
                                ProductImageNotFoundError, ProductNotFoundError)
 from crafty.schemas.product import ProductCreate, ProductUpdate
 
@@ -39,6 +39,9 @@ def create_product(db: Session, product: ProductCreate) -> Product:
     except IntegrityError as e:
         logger.error(f"IntegrityError: {e}")
         db.rollback()
+        raise
+    except AttributeError as e:
+        logger.error(f"AttributeError while creating product: {e}")
         raise
     except Exception as e:
         logger.error(f"Error creating product: {e}")
@@ -174,3 +177,42 @@ def get_product_image(db: Session, image_id: int) -> ProductImage:
     if not product_image:
         raise ProductImageNotFoundError(image_id)
     return product_image
+
+
+def get_products_by_seller(db: Session, seller_id: int, skip: int = 0, limit: int = 10):
+    """
+    Retrieve all products associated with a specific seller.
+
+    Args:
+        db (Session): The database session.
+        seller_id (int): The ID of the seller whose products to retrieve.
+        skip (int, optional): Number of records to skip. Defaults to 0.
+        limit (int, optional): Maximum number of records to return. Defaults to 10.
+
+    Returns:
+        List[Product]: A list of products associated with the specified seller.
+
+    Raises:
+        NoProductsFoundError: If no products are found for the seller.
+    """
+    try:
+        products = (
+            db.query(Product)
+            .filter(Product.seller_id == seller_id)
+            .offset(skip)
+            .limit(limit)
+            .all()
+        )
+        if not products:
+            raise NoProductsFoundError(seller_id)
+        return products
+    except AttributeError as e:
+        logger.error(
+            f"AttributeError while retrieving products for seller {seller_id}: {e}"
+        )
+        raise
+    except Exception as e:
+        logger.error(
+            f"Unexpected error while retrieving products for seller {seller_id}: {e}"
+        )
+        raise

@@ -1,20 +1,29 @@
 from typing import List
 
 from fastapi import APIRouter, Depends, HTTPException
-from sqlalchemy.exc import NoResultFound
 from sqlalchemy.orm import Session
 
-from crafty.crud.user import create_user, get_user, get_users
+from crafty.crud.user import create_user, delete_user, get_user, get_users
 from crafty.db.session import get_db
+from crafty.decorators import handle_http_exceptions
 from crafty.exceptions import (InvalidUserTypeError, UserAlreadyExistsError,
                                UserNotFoundError)
 from crafty.schemas.user import UserCreate, UserResponse
 
 router = APIRouter(tags=["users"], prefix="/users")
 
+exception_mapping = {
+    UserAlreadyExistsError: 400,
+    InvalidUserTypeError: 400,
+    UserNotFoundError: 404,
+}
+
 
 @router.post("/", response_model=UserResponse)
-def create_new_user(user: UserCreate, db: Session = Depends(get_db)) -> UserResponse:
+@handle_http_exceptions(exception_mapping)
+async def create_new_user(
+    user: UserCreate, db: Session = Depends(get_db)
+) -> UserResponse:
     """
     Create a new user.
 
@@ -23,23 +32,17 @@ def create_new_user(user: UserCreate, db: Session = Depends(get_db)) -> UserResp
         db (Session, optional): The database session. Defaults to Depends(get_db).
 
     Returns:
-        User: The created user object.
+        UserResponse: The created user object.
 
     Raises:
-        HTTPException: If a user with the same username or email already exists, or if the user type is invalid.
+        HTTPException: If a user with the same email or username already exists,
+                       or other internal errors occur.
     """
-    try:
-        return create_user(db=db, user=user)
-    except UserAlreadyExistsError as e:
-        raise HTTPException(status_code=400, detail=str(e))
-    except InvalidUserTypeError as e:
-        raise HTTPException(status_code=400, detail=str(e))
-    except Exception as e:
-        raise HTTPException(status_code=500, detail="Internal server error")
+    return create_user(db=db, user=user)
 
 
 @router.get("/", response_model=List[UserResponse])
-def read_users(
+async def read_users(
     skip: int = 0, limit: int = 10, db: Session = Depends(get_db)
 ) -> List[UserResponse]:
     """
@@ -51,98 +54,81 @@ def read_users(
         db (Session, optional): The database session. Defaults to Depends(get_db).
 
     Returns:
-        List[UserResponse]: List of user objects.
+        List[UserResponse]: A list of user objects.
     """
     return get_users(db, skip=skip, limit=limit)
 
 
 @router.get("/email/{email}", response_model=UserResponse)
-def read_user_by_email(email: str, db: Session = Depends(get_db)):
+@handle_http_exceptions(exception_mapping)
+async def read_user_by_email(email: str, db: Session = Depends(get_db)) -> UserResponse:
     """
     Get a user by their email.
 
     Args:
         email (str): The email of the user to retrieve.
-        db (Session): The database session.
+        db (Session, optional): The database session. Defaults to Depends(get_db).
 
     Returns:
-        UserResponse: The user object.
+        UserResponse: The retrieved user object.
 
     Raises:
-        HTTPException: If the user with the given email does not exist.
+        HTTPException: If the user is not found or other internal errors occur.
     """
-    try:
-        user = get_user(db, email, "email")
-        return user
-    except UserNotFoundError:
-        raise HTTPException(
-            status_code=404, detail="User not found with the given email"
-        )
+    return get_user(db, email, "email")
 
 
 @router.get("/username/{username}", response_model=UserResponse)
-def read_user_by_username(username: str, db: Session = Depends(get_db)):
+@handle_http_exceptions(exception_mapping)
+async def read_user_by_username(
+    username: str, db: Session = Depends(get_db)
+) -> UserResponse:
     """
     Get a user by their username.
 
     Args:
         username (str): The username of the user to retrieve.
-        db (Session): The database session.
+        db (Session, optional): The database session. Defaults to Depends(get_db).
 
     Returns:
-        UserResponse: The user object.
+        UserResponse: The retrieved user object.
 
     Raises:
-        HTTPException: If the user with the given username does not exist.
+        HTTPException: If the user is not found or other internal errors occur.
     """
-    try:
-        user = get_user(db, username, "username")
-        return user
-    except UserNotFoundError:
-        raise HTTPException(
-            status_code=404, detail="User not found with the given username"
-        )
+    return get_user(db, username, "username")
 
 
 @router.get("/id/{user_id}", response_model=UserResponse)
-def read_user_by_id(user_id: int, db: Session = Depends(get_db)):
+@handle_http_exceptions(exception_mapping)
+async def read_user_by_id(user_id: int, db: Session = Depends(get_db)) -> UserResponse:
     """
     Get a user by their ID.
 
     Args:
         user_id (int): The ID of the user to retrieve.
-        db (Session): The database session.
+        db (Session, optional): The database session. Defaults to Depends(get_db).
 
     Returns:
-        UserResponse: The user object.
+        UserResponse: The retrieved user object.
 
     Raises:
-        HTTPException: If the user with the given ID does not exist.
+        HTTPException: If the user is not found or other internal errors occur.
     """
-    try:
-        user = get_user(db, user_id, "id")
-        return user
-    except UserNotFoundError as e:
-        raise HTTPException(status_code=404, detail=str(e))
-    except Exception as e:
-        raise HTTPException(status_code=500, detail="Internal server error")
+    return get_user(db, user_id, "id")
 
 
 @router.delete("/{user_id}", status_code=204)
-def delete_existing_user(user_id: int, db: Session = Depends(get_db)):
+@handle_http_exceptions(exception_mapping)
+async def delete_existing_user(user_id: int, db: Session = Depends(get_db)):
     """
-    Delete user.
+    Delete a user.
 
     Args:
-        user_id (int): The ID of the ser to delete.
+        user_id (int): The ID of the user to delete.
         db (Session, optional): The database session. Defaults to Depends(get_db).
 
     Raises:
         HTTPException: If the user is not found or other internal errors occur.
     """
-    try:
-        delete_user(db, user_id=user_id)
-    except UserNotFoundError as e:
-        raise HTTPException(status_code=404, detail=str(e))
-    except Exception as e:
-        raise HTTPException(status_code=500, detail="Internal server error")
+    delete_user(db, user_id, "id")

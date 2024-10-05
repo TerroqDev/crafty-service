@@ -5,6 +5,7 @@ from alembic import command
 from alembic.config import Config
 from invoke import task
 from sqlalchemy import create_engine, text
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy_utils import create_database, database_exists, drop_database
 
@@ -107,17 +108,27 @@ def populate_db(ctx):
         session.commit()
 
         # Create sample reviews
-        reviews = [
-            Review(
-                rating=Rating.five,
-                comment="Great product!",
-                reviewer_id=buyer.id,
-                reviewed_user_id=seller.id,
-                product_id=products[0].id,
-            ),
+        reviews_data = [
+            (Rating.five, "Great product!", buyer.id, seller.id, products[0].id),
+            (Rating.four, "Very useful!", buyer.id, seller.id, products[1].id),
         ]
-        session.add_all(reviews)
-        session.commit()
+
+        for rating, comment, reviewer_id, reviewed_user_id, product_id in reviews_data:
+            review = Review(
+                rating=rating,
+                comment=comment,
+                reviewer_id=reviewer_id,
+                reviewed_user_id=reviewed_user_id,
+                product_id=product_id,
+            )
+            try:
+                session.add(review)
+                session.commit()
+            except IntegrityError:
+                session.rollback()
+                print(
+                    f"Could not add review for product ID {product_id}. Review already exists."
+                )
 
         # Create sample favorites
         favorites = [
