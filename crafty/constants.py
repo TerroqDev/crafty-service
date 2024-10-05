@@ -1,7 +1,7 @@
 import enum
 
 
-class UserType(enum.Enum):
+class UserType(str, enum.Enum):
     buyer = "buyer"
     seller = "seller"
 

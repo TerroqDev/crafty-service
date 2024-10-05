@@ -1,10 +1,14 @@
 import datetime
 import random
 
+from alembic import command
+from alembic.config import Config
 from invoke import task
-from sqlalchemy import text
+from sqlalchemy import create_engine, text
 from sqlalchemy.orm import sessionmaker
+from sqlalchemy_utils import create_database, database_exists, drop_database
 
+from config import get_settings
 from crafty.constants import Rating, SubscriptionLevel, UserType
 from crafty.db.database import Base, engine
 from crafty.db.models.favorite import Favorite
@@ -12,26 +16,28 @@ from crafty.db.models.product import Product, ProductImage
 from crafty.db.models.review import Review
 from crafty.db.models.subscription import Subscription
 from crafty.db.models.tag import Tag
-from crafty.db.models.user import Buyer, Seller, User
+from crafty.db.models.user import Buyer, Seller
 from crafty.db.session import db_session
 
 
 @task
 def create_db(ctx):
     """Create the database schema."""
-    Base.metadata.create_all(engine)
+    if not database_exists(get_settings().database_url):
+        create_database(get_settings().database_url)
+        command.upgrade(Config("alembic.ini"), "head")
 
 
 @task
 def drop_db(ctx):
     """Drop the database schema."""
-    Base.metadata.drop_all(engine)
+    if database_exists(get_settings().database_url):
+        drop_database(get_settings().database_url)
 
 
 @task
 def populate_db(ctx):
     """Populate the database with sample data."""
-
     with db_session() as session:
         # Create sample users
         buyer = Buyer(
