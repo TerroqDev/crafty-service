@@ -10,6 +10,8 @@ from sqlalchemy_utils import create_database, database_exists
 
 from config import get_settings
 from crafty.db.database import Base, engine
+from crafty.middleware import LoggingMiddleware
+from crafty.routers import favorite, product, review, subscription, tag, user
 
 get_settings.cache_clear()
 
@@ -20,6 +22,14 @@ app = FastAPI(
     version=metadata(__package__)["Version"],
     contact={"name": "Mare i Vare", "email": "development@crafty.hr"},
 )
+
+app.add_middleware(LoggingMiddleware)
+app.include_router(favorite.router)
+app.include_router(product.router)
+app.include_router(review.router)
+app.include_router(subscription.router)
+app.include_router(tag.router)
+app.include_router(user.router)
 
 # Configure the logger
 logger = logging.getLogger(__name__)
@@ -51,7 +61,6 @@ def main():
     if not database_exists(get_settings().database_url):
         create_database(get_settings().database_url)
         logger.info("Database created, applying migrations.")
-        Base.metadata.create_all(bind=engine)
         command.upgrade(alembic_cfg, "head")
     else:
         logger.info("Applying any pending migrations.")
@@ -62,7 +71,6 @@ def main():
         host="127.0.0.1",
         port=4000,
         loop="asyncio",
-        reload=True,
     )
 
 
