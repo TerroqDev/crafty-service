@@ -17,6 +17,7 @@ pymysql = "^1.1.1"
 sqlalchemy-utils = "^0.41.2"
 pydantic = "^2.8.2"
 invoke = "^2.2.0"
+cryptography = "^44.0.2"
 
 [tool.poetry.group.dev.dependencies]
 pre-commit = "^3.7.1"
