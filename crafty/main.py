@@ -13,6 +13,7 @@ from crafty.db.database import Base, engine
 from crafty.middleware import LoggingMiddleware
 from crafty.routers import favorite, product, review, subscription, tag, user
 
+# Clear settings cache to ensure fresh configuration loading
 get_settings.cache_clear()
 
 # Initialize the FastAPI app
