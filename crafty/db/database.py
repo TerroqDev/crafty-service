@@ -1,7 +1,7 @@
 from sqlalchemy import create_engine
 from sqlalchemy.ext.declarative import declarative_base
 
-from config import get_settings
+from crafty.config import get_settings
 
 # Create SQLAlchemy engine
 engine = create_engine(

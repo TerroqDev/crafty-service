@@ -8,10 +8,11 @@ from fastapi import FastAPI
 from fastapi.responses import RedirectResponse
 from sqlalchemy_utils import create_database, database_exists
 
-from config import get_settings
+from crafty.routers import favorite, product, review, subscription, tag, user
+from crafty.config import get_settings
 from crafty.db.database import Base, engine
 from crafty.middleware import LoggingMiddleware
-from crafty.routers import favorite, product, review, subscription, tag, user
+
 
 # Clear settings cache to ensure fresh configuration loading
 get_settings.cache_clear()
@@ -36,7 +37,6 @@ app.include_router(user.router)
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO)
 
-
 @app.get("/")
 def redirect_to_docs():
     """Redirect root URL to FastAPI documentation."""
@@ -59,6 +59,8 @@ def main():
 
     alembic_cfg = Config("alembic.ini")
 
+    logger.info(get_settings().database_url)
+
     if not database_exists(get_settings().database_url):
         create_database(get_settings().database_url)
         logger.info("Database created, applying migrations.")
@@ -69,8 +71,8 @@ def main():
 
     uvicorn.run(
         "crafty.main:app",
-        host="127.0.0.1",
-        port=4000,
+        host="0.0.0.0",
+        port=8000,
         loop="asyncio",
     )
 

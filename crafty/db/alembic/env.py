@@ -4,7 +4,7 @@ from alembic import context
 from sqlalchemy import engine_from_config, pool
 from sqlalchemy.ext.declarative import DeclarativeMeta
 
-from config import get_settings
+from crafty.config import get_settings
 from crafty.db.database import Base
 from crafty.db.models.favorite import Favorite
 from crafty.db.models.product import Product, ProductImage

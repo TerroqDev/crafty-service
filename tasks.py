@@ -9,7 +9,7 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy_utils import create_database, database_exists, drop_database
 
-from config import get_settings
+from crafty.config import get_settings
 from crafty.constants import Rating, SubscriptionLevel, UserType
 from crafty.db.database import Base, engine
 from crafty.db.models.favorite import Favorite

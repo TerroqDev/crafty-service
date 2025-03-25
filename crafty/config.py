@@ -20,7 +20,8 @@ class Settings(BaseSettings):
         env_file specifies location to environment file from which setting values are fetched.
         """
 
-        env_file = Path(__file__).resolve().parent / ".env"
+        env_file = Path(__file__).resolve().parent / "../.env"
+        extra = "allow"
 
 
 @lru_cache
